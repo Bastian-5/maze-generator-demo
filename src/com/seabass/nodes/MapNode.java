@@ -10,9 +10,9 @@ public class MapNode extends GridNode{
 	
 	protected boolean end,bonus;
 	
-	protected ArrayList<MapNode> decendants = new ArrayList<MapNode>();
+	public boolean empty() {return false;} //if moved to Kotlin, replace this with a final val
 	
-	public boolean empty() {return false;}
+	boolean grouped = false;
 	
 	public MapNode(MapNode parent, int x, int y) {
 		super(x,y);
@@ -32,7 +32,6 @@ public class MapNode extends GridNode{
 	
 	public MapNode(int x, int y) {
 		super(x,y);
-		System.out.println(x+y);
 		parent = this;
 	}
 	
@@ -72,18 +71,19 @@ public class MapNode extends GridNode{
 		return parent;
 	}
 
-	public void setParent(MapNode parent) {
+	/*public void setParent(MapNode parent) {
 		if(!decendants.contains(parent)) this.parent = parent;
-	}
+	}*/
 
 	public MapNode[] getChildren() {
 		return children.toArray(new MapNode[children.size()]);
 	}
+
 	
-	public ArrayList<MapNode> getDecendants() {
+	/*public ArrayList<MapNode> getDecendants() {
 		
 		return decendants;
-	}
+	}*/
 	
 	public int getX() {
 		return x;
@@ -97,13 +97,13 @@ public class MapNode extends GridNode{
 	
 	public void addChild(MapNode child) {
 		
-		addDecendant(child);
+		//addDecendant(child);
 		children.add(child);
 	}
 	
-	public void addDecendant(MapNode child) {
+	/*public void addDecendant(MapNode child) {
 		
 		decendants.add(child);
 		if(parent!=this)parent.addDecendant(child);
-	}
+	}*/
 }

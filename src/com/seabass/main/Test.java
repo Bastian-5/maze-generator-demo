@@ -11,6 +11,7 @@ import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 
+import com.seabass.nodes.BigRoom;
 import com.seabass.nodes.EmptyNode;
 import com.seabass.nodes.MapNode;
 import com.seabass.nodes.NodeCoords;
@@ -21,6 +22,8 @@ public class Test {
 	MapNode map[][];
 	MapNode start;
 	MapNode end;
+	BigRoom bigRooms[];
+	
 	public Test() {
 		
 		
@@ -28,11 +31,14 @@ public class Test {
 		long now = System.currentTimeMillis();
 		int endDist = 0;
 		map = new MapNode[1][1];
+		boolean gen = false;
 		while(endDist < map.length + map[0].length-1) {
 			createMap(map[0].length,map.length);
+			if(!gen) {
+				now = System.currentTimeMillis();
+				gen = true;
+			}
 			endDist = generateMap();
-			System.out.println(endDist);
-			System.out.println(map.length);
 		}
 		now = System.currentTimeMillis()-now;
 		System.out.println("Done Generating Maze. Took " + now +" milliseconds");
@@ -61,6 +67,16 @@ public class Test {
 			
 			hig = in.nextInt();
 		}
+		
+		System.out.println("How Many Big Rooms?");
+		
+		bigRooms = new BigRoom[in.nextInt()];
+		
+		while(bigRooms.length>= (hig/2)*(wid/2)) {
+			System.out.println("Not Enough Space, plesae enter a number smaller than " + ((hig/2)*(wid/2)));
+			bigRooms = new BigRoom[in.nextInt()];
+		}
+		
 		in.close();
 		}
 		map = new MapNode[hig][wid];
@@ -78,7 +94,6 @@ public class Test {
 		
 	
 		Random r = new Random();
-		System.out.println(r.nextInt());
 		int start = r.nextInt(((map.length > map[0].length)? map.length : map[0].length)-1);
 		int end = r.nextInt(((map.length > map[0].length)? map.length : map[0].length)-1);
 		
@@ -135,18 +150,19 @@ public class Test {
 				side = 3;
 			}
 		}
-		System.out.println(sY);
 		
 		MapNode node = new MapNode(sX,sY);
 		map[sY][sX] = node;
 		this.start = node;
 		
 		ArrayList<MapNode> empties = new ArrayList<>();
+		ArrayList<MapNode> loose = new ArrayList<>();
 		for(int i = 0; i < map.length; i++) 
 			for(int j = 0; j < map[0].length; j++) 
 				empties.add(map[i][j]);
 		empties.remove(node);
 		boolean endFound = false;
+		int sinceJump =0;
 		while(empties.size() > 0) {
 			
 			ArrayList<MapNode> near = new ArrayList<>();
@@ -155,6 +171,7 @@ public class Test {
 				if(node == this.end) {
 					int count = Math.abs(r.nextInt()) % (node.getGen()-map.length);
 					for(int i = 0; i < count && node != node.getParent(); i++)node = node.getParent();
+					sinceJump = 0;
 				}
 			}
 			
@@ -165,20 +182,26 @@ public class Test {
 							near.add(map[node.getY()+i][node.getX()+j]);
 			
 			if(near.size() <= 0) { 
-				if(node!= node.getParent())node = node.getParent();
+				/*
+				if(node.getChildren().length==0)for(int i = 0; i < cappedRand(r,node.getGen());i++)node = node.getParent();
 				else {
-					node = node.getDecendants().get(Math.abs(r.nextInt())%node.getDecendants().size());
-				}
-				//println("got here 2");
+					for(int i = 0; i < cappedRand(r,map.length*map[0].length-empties.size()) && node.getChildren().length > 0; i++) 
+						node = node.getChildren()[cappedRand(r,node.getChildren().length)];
+				}*/
+				loose.remove(node);
+				node = loose.get(cappedRand(r,loose.size()));
+				sinceJump = 0;
 				continue;
 			}
 			
+			if(near.size()>1&&!loose.contains(node)) loose.add(node);
+			
 			if(endFound) {
 				try {
-				if(Math.abs(r.nextInt()%100)<10) {
-					int count = (Math.abs(r.nextInt()) % (node.getGen()));
-					for(int i = 0; i < count && node != node.getParent(); i++)node = node.getParent();
-					println("got here");
+				if(cappedRand(r,1000)/sinceJump<node.sinceIntersect()) {
+					int count = cappedRand(r,node.getGen()-map.length);
+					for(int i = 0; i < count && node != node.getParent() && loose.contains(node.getParent()); i++)node = node.getParent();
+					sinceJump = 0;
 					continue;
 				}
 				}catch(Exception e) {}
@@ -189,7 +212,9 @@ public class Test {
 				node = new MapNode(node,tempNode.getX(),tempNode.getY());
 			
 				map[node.getY()][node.getX()] = node;
-			
+				
+				sinceJump++;
+				
 			} else {
 			
 				for(MapNode temp: near) {
@@ -201,8 +226,10 @@ public class Test {
 				}
 				MapNode tempNode = near.get(0);
 				for(int i = 1; i < near.size(); i++) {
-					int judge = Math.abs(r.nextInt())%100;
-					if((Math.abs(tempNode.getX()-eX) + Math.abs(tempNode.getY()-eY) > Math.abs(near.get(i).getX()-eX) + Math.abs(near.get(i).getY()-eY) && judge < 60)||judge < 30) tempNode = near.get(i); 
+					int judge = cappedRand(r,100);
+					int turnWrong = 30; //chance that the wandering path will actively turn away from the goal
+					int turnRight = 60; //chance that the wandering path will turn towards the goal
+					if((Math.abs(tempNode.getX()-eX) + Math.abs(tempNode.getY()-eY) > Math.abs(near.get(i).getX()-eX) + Math.abs(near.get(i).getY()-eY) && judge < turnRight)||judge < turnWrong) tempNode = near.get(i); 
 				}
 				
 				empties.remove(tempNode);
@@ -213,7 +240,7 @@ public class Test {
 				
 				if(node.getX()==eX&&node.getY() == eY) {
 					this.end = node;
-					int count = Math.abs(r.nextInt()) % (node.getGen()-map.length);
+					int count = cappedRand(r,node.getGen()-map.length);
 					for(int i = 0; i < count && node != node.getParent(); i++)node = node.getParent();
 					endFound = true;
 					if(this.end.getGen() < map.length + map[0].length) break;
@@ -221,6 +248,31 @@ public class Test {
 			}
 			System.out.println(empties.size());
 		}
+		ArrayList<MapNode> BigRoomNodes = new ArrayList<>();
+		
+		for( int i = 0; i < bigRooms.length; i++) {
+			
+			while(true) {
+				int x = cappedRand(r,map[0].length-1), y = cappedRand(r,map.length-1);
+				
+				MapNode[] tempNodes = new MapNode[4];
+				
+				tempNodes[0] = map[y][x];
+				tempNodes[1] = map[y][x+1];
+				tempNodes[2] = map[y+1][x];
+				tempNodes[3] = map[y+1][x+1];
+				
+				boolean bad = false;
+				for(MapNode node1: tempNodes) if(BigRoomNodes.contains(node1)) bad = true;
+				if(bad)continue;
+				
+				for(MapNode node1: tempNodes) BigRoomNodes.add(node1);
+				
+				bigRooms[i] = new BigRoom(tempNodes);
+				break;
+			}
+		}
+		
 		return this.end.getGen();
 	}
 	
@@ -257,6 +309,12 @@ public class Test {
 			}
 		}
 		
+		g2d.setColor(Color.blue);
+		for(BigRoom room: bigRooms) {
+			NodeCoords rc = new NodeCoords(room.getX1(),room.getY1());
+			g2d.fillRect(rc.x-dotSize/2, rc.y-dotSize/2, mapScale*(room.getX2()-room.getX1())+dotSize, mapScale*(room.getY2()-room.getY1())+dotSize);
+		}
+		
 		try {
             
             ImageIO.write(img,"jpg", new File("res/test.jpg"));
@@ -283,4 +341,8 @@ public class Test {
 		System.out.println(oa);
 	}
 	
+	int cappedRand(Random r, int max) {
+		if(max <= 0) return 0;
+		return Math.abs(r.nextInt())%max;
+	}
 }
