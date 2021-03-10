@@ -1,6 +1,5 @@
 package com.seabass.nodes;
 
-import java.awt.Graphics;
 import java.util.ArrayList;
 
 public class BigRoom {

@@ -79,7 +79,7 @@ public class Test {
 		
 		in.close();
 		}
-		map = new MapNode[hig][wid];
+		MapNode[][] map = new MapNode[hig][wid];
 		
 		for(int i = 0; i < hig; i++) {
 			for(int j = 0; j < wid; j++) {
@@ -337,12 +337,14 @@ public class Test {
 		return x;
 	}
 	
-	void println(String oa) {
-		System.out.println(oa);
-	}
-	
 	int cappedRand(Random r, int max) {
 		if(max <= 0) return 0;
 		return Math.abs(r.nextInt())%max;
 	}
+	
+	void println(String oa) {
+		System.out.println(oa);
+	}
+	
+
 }
